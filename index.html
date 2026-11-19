@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Frameboard – AI storyboard & scene generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9EDF2;--paper:#FBFCFD;--ink:#1B2433;--muted:#5B6678;--line:#C3CBD6;--pencil:#6FA6DC;--grease:#D2402F;--btn:#1B2433;--btntxt:#FBFCFD;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151D;--paper:#192130;--ink:#E7ECF4;--muted:#9AA6B8;--line:#2B3649;--pencil:#4F83BC;--grease:#FF6B58;--btn:#E7ECF4;--btntxt:#10151D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10151D;--paper:#192130;--ink:#E7ECF4;--muted:#9AA6B8;--line:#2B3649;--pencil:#4F83BC;--grease:#FF6B58;--btn:#E7ECF4;--btntxt:#10151D;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "DM Sans",system-ui,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 56px}
+.brand{font:800 20px "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand i{width:26px;height:16px;border:2px solid var(--ink);border-radius:2px;position:relative;display:inline-block}
+.brand i:after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;background:var(--grease);border-radius:50%;transform:translate(-50%,-50%)}
+h1{font:800 clamp(34px,6vw,64px)/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.03em;margin:44px 0 14px;max-width:14ch}
+.lede{color:var(--muted);max-width:56ch;margin:0 0 28px}
+.card{background:var(--paper);border:1.5px solid var(--ink);border-radius:4px;padding:18px}
+label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+textarea,select{width:100%;font:inherit;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:3px;padding:10px 12px}
+textarea{min-height:104px;resize:vertical}
+textarea:focus,select:focus,button:focus-visible{outline:3px solid var(--pencil);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-top:14px;align-items:end}
+@media(max-width:620px){.row{grid-template-columns:1fr}}
+button{font:700 15px "DM Sans",sans-serif;cursor:pointer;border-radius:3px;padding:11px 20px;border:1.5px solid var(--btn);background:var(--btn);color:var(--btntxt)}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+button:disabled{opacity:.55;cursor:progress}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chips button{font-weight:500;font-size:13px;padding:5px 10px;background:transparent;color:var(--muted);border-color:var(--line)}
+.chips button:hover{color:var(--ink);border-color:var(--ink)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin:40px 0 14px}
+.bar h2{font:800 28px "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;margin:0}
+.status{color:var(--muted);font-size:14px;min-height:22px;margin-top:10px}
+.status.err{color:var(--grease)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.panel{background:var(--paper);border:1.5px solid var(--ink);border-radius:3px;padding:10px 10px 14px}
+.panel svg{display:block;width:100%;height:auto;border:1.5px solid var(--ink);background:var(--bg)}
+.meta{display:flex;justify-content:space-between;gap:8px;margin:10px 2px 6px;font-weight:700;font-size:14px}
+.meta b{color:var(--grease);font-family:"Bricolage Grotesque",sans-serif;font-size:18px;line-height:1}
+.meta span{text-align:right}
+.panel p{margin:4px 2px;font-size:14px}
+.dlg{font-style:italic}
+.snd{color:var(--muted)}
+.foot{margin-top:48px;color:var(--muted);font-size:14px;max-width:62ch}
+.skel{opacity:.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><i></i>Frameboard</div>
+  <h1>Describe a scene. Get the shots.</h1>
+  <p class="lede">Write a few lines about what happens. Frameboard breaks it into panels with shot types, camera moves, action, dialogue and timing, then sketches the framing for each one.</p>
+
+  <div class="card">
+    <label for="scene">Your scene</label>
+    <textarea id="scene" placeholder="A night-shift nurse finds a child’s drawing taped inside an empty elevator, and it shows her own face."></textarea>
+    <div class="chips" id="chips" aria-label="Example scenes"></div>
+    <div class="row">
+      <div><label for="tone">Tone</label>
+        <select id="tone"><option>Cinematic drama</option><option>Noir</option><option>Comedy</option><option>Documentary</option><option>Animated family film</option><option>Horror</option></select></div>
+      <div><label for="count">Panels</label>
+        <select id="count"><option>4</option><option selected>6</option><option>8</option></select></div>
+      <button id="go">Generate storyboard</button>
+    </div>
+    <div class="status" id="status" role="status"></div>
+  </div>
+
+  <div class="bar">
+    <h2 id="title">Example: Last train</h2>
+    <button class="ghost" id="dl">Download shot list</button>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <p class="foot">Sketches show subject placement, horizon and camera movement, not final art. Use them to plan coverage, then hand the shot list to your cinematographer, animator or editor.</p>
+</div>
+
+<script>
+const W=160,H=90;
+const EXAMPLE={title:"Last train",panels:[
+{shot:"Wide",move:"Static",action:"An empty platform at 1 a.m. A lone commuter stands at the far edge as fluorescent lights flicker.",dialogue:"",sound:"Distant rail hum, a buzzing light",seconds:4,subjectX:.25,horizon:.55},
+{shot:"Medium",move:"Push in",action:"She checks her phone. The last train has been cancelled, and the screen shows no signal.",dialogue:"Come on, not tonight.",sound:"Phone chime, then silence",seconds:3,subjectX:.6,horizon:.5},
+{shot:"Insert",move:"Static",action:"A paper ticket in her hand is dated tomorrow.",dialogue:"",sound:"Paper rustle",seconds:2,subjectX:.5,horizon:.6},
+{shot:"Close-up",move:"Tilt up",action:"Headlights sweep across her face. She squints, then slowly smiles.",dialogue:"",sound:"Brakes squeal",seconds:3,subjectX:.4,horizon:.7},
+{shot:"Wide",move:"Pan right",action:"An old, unmarked train glides in. Its doors open on a lit, empty carriage.",dialogue:"",sound:"Doors hiss",seconds:4,subjectX:.75,horizon:.6},
+{shot:"Extreme close-up",move:"Pull out",action:"Her eye reflects the glowing doorway as she steps toward it.",dialogue:"Just one stop.",sound:"Low string note",seconds:3,subjectX:.5,horizon:.5}]};
+const SAMPLES=["Two rival bakers realise they share the same secret recipe.","A robot gardener shows a lost kid the way out of a hedge maze.","A detective interviews a suspect who keeps finishing her sentences."];
+let board=EXAMPLE;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,isFinite(v)?v:(a+b)/2));
+
+function arrow(x1,y1,x2,y2){const a=Math.atan2(y2-y1,x2-x1),l=5;
+ const p=s=>`${x2-l*Math.cos(a+s)},${y2-l*Math.sin(a+s)}`;
+ return `<path d="M${x1} ${y1}L${x2} ${y2}M${p(.45)}L${x2} ${y2}L${p(-.45)}" fill="none" stroke="var(--grease)" stroke-width="1.8" stroke-linecap="round"/>`}
+function moveMarks(m){m=(m||"").toLowerCase();
+ if(/push|dolly in|zoom in/.test(m))return arrow(8,8,24,22)+arrow(W-8,8,W-24,22)+arrow(8,H-8,24,H-22)+arrow(W-8,H-8,W-24,H-22);
+ if(/pull|dolly out|zoom out/.test(m))return arrow(24,22,8,8)+arrow(W-24,22,W-8,8)+arrow(24,H-22,8,H-8)+arrow(W-24,H-22,W-8,H-8);
+ if(/right/.test(m))return arrow(W/2-24,H-10,W/2+24,H-10);
+ if(/left/.test(m))return arrow(W/2+24,H-10,W/2-24,H-10);
+ if(/up|crane/.test(m))return arrow(W-12,H-14,W-12,12);
+ if(/down/.test(m))return arrow(W-12,12,W-12,H-14);
+ return ""}
+function sketch(p){
+ const hz=clamp(p.horizon,.2,.85)*H,x=clamp(p.subjectX,.12,.88)*W,s=(p.shot||"").toLowerCase();
+ let g="";
+ for(let y=hz+6;y<H;y+=7)g+=`<path d="M0 ${y}L${W} ${y}" stroke="var(--line)" stroke-width=".8"/>`;
+ let f="";const st='fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round"';
+ if(/extreme/.test(s)){f=`<ellipse cx="${x}" cy="${H/2}" rx="46" ry="16" ${st}/><circle cx="${x}" cy="${H/2}" r="11" fill="var(--pencil)" stroke="var(--ink)" stroke-width="1.8"/><circle cx="${x}" cy="${H/2}" r="4" fill="var(--ink)"/>`}
+ else if(/close/.test(s)){const r=17,hy=H*.42;f=`<circle cx="${x}" cy="${hy}" r="${r}" ${st}/><path d="M${x-r*1.9} ${H}Q${x-r*1.7} ${hy+r+6} ${x} ${hy+r+6}Q${x+r*1.7} ${hy+r+6} ${x+r*1.9} ${H}" ${st}/>`}
+ else if(/medium|over/.test(s)){const r=8,hy=H*.34;f=`<circle cx="${x}" cy="${hy}" r="${r}" ${st}/><path d="M${x-r*2.4} ${H}Q${x-r*2.2} ${hy+r+4} ${x} ${hy+r+4}Q${x+r*2.2} ${hy+r+4} ${x+r*2.4} ${H}" ${st}/>`}
+ else if(/insert|detail/.test(s)){f=`<rect x="${x-20}" y="${H/2-13}" width="40" height="26" rx="3" ${st}/><path d="M${x-12} ${H/2-3}h24M${x-12} ${H/2+4}h16" stroke="var(--ink)" stroke-width="1.4"/>`}
+ else{const r=3.2,feet=Math.min(H-5,hz+16),hy=feet-r*6-r;f=`<circle cx="${x}" cy="${hy}" r="${r}" ${st}/><path d="M${x} ${hy+r}V${feet-8}M${x} ${feet-8}L${x-3.5} ${feet}M${x} ${feet-8}L${x+3.5} ${feet}M${x-4} ${hy+r+4}H${x+4}" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round"/>`}
+ const th=`<path d="M${W/3} 0V${H}M${2*W/3} 0V${H}M0 ${H/3}H${W}M0 ${2*H/3}H${W}" stroke="var(--pencil)" stroke-width=".7" stroke-dasharray="2 3" opacity=".8"/>`;
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sketch of a ${esc(p.shot)} shot">${th}${g}<path d="M0 ${hz}H${W}" stroke="var(--ink)" stroke-width="1" opacity=".5"/>${f}${moveMarks(p.move)}</svg>`}
+
+function render(b){
+ $("title").textContent=(b===EXAMPLE?"Example: ":"")+b.title;
+ $("grid").innerHTML=b.panels.map((p,i)=>`<article class="panel">${sketch(p)}
+ <div class="meta"><b>${i+1}</b><span>${esc(p.shot)} · ${esc(p.move||"Static")} · ${esc(p.seconds)}s</span></div>
+ <p>${esc(p.action)}</p>${p.dialogue?`<p class="dlg">“${esc(p.dialogue)}”</p>`:""}${p.sound?`<p class="snd">Sound: ${esc(p.sound)}</p>`:""}</article>`).join("")}
+
+function say(t,err){const s=$("status");s.textContent=t;s.className="status"+(err?" err":"")}
+
+$("chips").innerHTML=SAMPLES.map(t=>`<button type="button">${esc(t)}</button>`).join("");
+$("chips").addEventListener("click",e=>{if(e.target.tagName==="BUTTON"){$("scene").value=e.target.textContent;$("scene").focus()}});
+
+$("go").addEventListener("click",async()=>{
+ const scene=$("scene").value.trim();
+ if(!scene){say("Describe your scene first, even in a single sentence.",true);return}
+ const btn=$("go");btn.disabled=true;btn.textContent="Drawing panels…";say("");
+ $("grid").classList.add("skel");
+ try{
+  const sample=await claude.use("sample");
+  if(!sample){say("Generation works when this page is opened in claude.ai. The example above shows the output.",true);return}
+  const n=+$("count").value;
+  const out=await sample.json(`You are a storyboard artist. Break this scene into exactly ${n} sequential panels in a ${$("tone").value} tone.
+Scene: ${scene}
+Return ONLY JSON, no markdown: {"title":string,"panels":[{"shot":one of "Wide","Medium","Close-up","Extreme close-up","Over-the-shoulder","Insert","Low angle","High angle","move":one of "Static","Pan left","Pan right","Tilt up","Tilt down","Push in","Pull out","action":one or two plain sentences of what we see,"dialogue":string or "","sound":short string or "","seconds":number 2-8,"subjectX":number 0.15-0.85 (subject position left to right),"horizon":number 0.3-0.8 (horizon height from top)}]}
+Vary the shot types so the sequence has rhythm, and make each panel advance the story.`,{modelTier:"default",cache:false});
+  if(!out||!Array.isArray(out.panels)||!out.panels.length)throw new Error("bad");
+  board={title:out.title||"Untitled scene",panels:out.panels.slice(0,8)};
+  render(board);say(`Done. ${board.panels.length} panels, about ${board.panels.reduce((a,p)=>a+(+p.seconds||0),0)} seconds of screen time.`);
+ }catch(e){
+  say(e&&e.code==="not_granted"?"Permission was declined, so nothing was generated.":e&&e.code==="rate_limited"?"Too many requests right now. Wait a minute and try again.":"The storyboard could not be generated. Try again, or simplify the scene.",true);
+ }finally{btn.disabled=false;btn.textContent="Generate storyboard";$("grid").classList.remove("skel")}
+});
+
+$("dl").addEventListener("click",async()=>{
+ const md=`# ${board.title}\n\n`+board.panels.map((p,i)=>`## Panel ${i+1}: ${p.shot}, ${p.move||"Static"}, ${p.seconds}s\n${p.action}\n${p.dialogue?`Dialogue: "${p.dialogue}"\n`:""}${p.sound?`Sound: ${p.sound}\n`:""}`).join("\n");
+ try{const d=await claude.use("downloads");if(!d){say("Downloads aren’t available here.",true);return}
+  await d.save({filename:board.title.replace(/[^\w]+/g,"-").toLowerCase()+"-shot-list.md",data:md})}catch(e){say("The file was not saved.",true)}
+});
+render(board);
+</script>
+</body>
+</html>
